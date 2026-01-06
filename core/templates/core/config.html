@@ -1,0 +1,16 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<a href='/' class='btn btn-secondary mb-3'>Voltar</a>
+<div class='row'><div class='col-md-6 mb-3'><div class='card bg-dark text-light border-secondary'>
+<div class='card-header'>Inicialização</div><div class='card-body'>
+{% if not existe_db %}<form method='POST'>{% csrf_token %}<button name='tipo' value='inicializar' class='btn btn-success w-100'>Criar Padrão</button></form>
+{% else %}<p class='text-success'>Banco Ativo</p>{% endif %}</div></div>
+<div class='card bg-dark text-light border-secondary mt-3'><div class='card-header'>Novo Lote</div>
+<div class='card-body'><form method='POST'>{% csrf_token %}<input type='hidden' name='tipo' value='novo_lote'>
+<label>Quadra:</label><select name='quadra_alvo' class='form-select mb-3 text-dark'>{% for q in quadras %}<option value='{{ q.numero }}'>Quadra {{ q.numero }}</option>{% endfor %}</select>
+<button class='btn btn-primary w-100'>Add Lote</button></form></div></div></div>
+<div class='col-md-6'><div class='card bg-dark text-light border-secondary'>
+<div class='card-header'>Nova Quadra</div><div class='card-body'><p>Quadra {{ prox }}</p>
+<form method='POST'>{% csrf_token %}<input type='hidden' name='tipo' value='nova_quadra'>
+<label>Lotes:</label><input type='number' name='qtd_lotes' value='24' class='form-control mb-3 text-dark'>
+<button class='btn btn-success w-100'>Criar</button></form></div></div></div></div>{% endblock %}

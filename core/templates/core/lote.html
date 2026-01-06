@@ -1,0 +1,26 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<a href="{% url 'detalhe_quadra' quadra.numero %}" class='btn btn-secondary mb-3'>Voltar</a>
+<div class='card text-dark shadow mb-4'><div class='card-header bg-secondary text-white'>Q{{ quadra.numero }} | Lote {{ lote.numero }}</div>
+<div class='card-body bg-light'>{% for i in gavetas %}
+<div class='card mb-3 status-card {{ i.css }}'><div class='card-body'>
+<div class='d-flex justify-content-between'><div><h5 class='fw-bold'>G{{ i.obj.numero }} <span class='badge bg-secondary'>{{ i.texto }}</span></h5>
+{% if i.obj.status != 'Livre' %}<p class='mb-0'>{{ i.obj.nome }}</p><small>{{ i.obj.data|date:"d/m/Y" }}</small><br><small class='text-danger fw-bold'>{{ i.msg }}</small>{% endif %}
+</div><button class='btn btn-dark btn-sm' type='button' data-bs-toggle='collapse' data-bs-target='#ed{{ i.obj.id }}'>✏️</button></div>
+<div class='collapse mt-2' id='ed{{ i.obj.id }}'><form method='POST' class='card card-body'>{% csrf_token %}
+<input type='hidden' name='gaveta_id' value='{{ i.obj.id }}'>
+{% if i.obj.status == 'Livre' %}
+<input type='text' name='nome' class='form-control mb-2' placeholder='Nome' required>
+<input type='date' name='data' class='form-control mb-2' required>
+<div class='row'><div class='col-6'><button name='acao' value='ocupar' class='btn btn-warning w-100'>Enterro</button></div>
+<div class='col-6'><button name='acao' value='vender' class='btn btn-info w-100'>Vender</button></div></div>
+{% else %}
+<input type='text' name='nome' class='form-control mb-2' value='{{ i.obj.nome }}'>
+<input type='date' name='data' class='form-control mb-2' value='{{ i.obj.data|date:"Y-m-d" }}'>
+<button name='acao' value='atualizar' class='btn btn-primary w-100 mb-2'>Salvar</button>
+<button name='acao' value='liberar' class='btn btn-outline-danger w-100'>Exumar/Limpar</button>
+{% endif %}</form></div></div></div>{% endfor %}</div></div>
+<div class='card border-danger mb-5'><div class='card-header bg-danger text-white'>ZONA DE PERIGO</div>
+<div class='card-body text-center'><p class='text-danger'>Apagar Lote {{ lote.numero }}?</p>
+<form action="{% url 'excluir_lote' quadra.numero lote.numero %}" method='POST' onsubmit="return confirm('TEM CERTEZA?');">{% csrf_token %}
+<button class='btn btn-outline-danger'>🗑️ EXCLUIR LOTE</button></form></div></div>{% endblock %}

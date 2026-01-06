@@ -1,0 +1,8 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class='d-flex justify-content-between mb-3'><a href='/' class='btn btn-secondary'>Voltar</a>
+<h4>Quadra {{ quadra.numero }}</h4><span class='badge bg-info text-dark'>{{ percentual }}%</span></div>
+<div class='row'>{% for i in lotes %}
+<div class='col-4 col-md-2 mb-3'><a href="{% url 'detalhe_lote' quadra.numero i.obj.numero %}" class='btn btn-{{ i.cor }} w-100 py-3 position-relative'>
+Lote {{ i.obj.numero }}{% if i.cheio %}<span class='position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle'></span>{% endif %}
+</a></div>{% endfor %}</div>{% endblock %}

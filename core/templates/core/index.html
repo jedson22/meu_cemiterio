@@ -1,0 +1,7 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<h3 class='text-center mb-4'>Mapa Geral</h3>
+<div class='row'>{% for i in quadras %}
+<div class='col-6 col-md-3 mb-3'><a href="{% url 'detalhe_quadra' i.obj.numero %}" class='btn btn-{{ i.cor }} w-100 py-4 fs-5 shadow'>
+Quadra {{ i.obj.numero }}<br><span class='badge bg-dark bg-opacity-50'>{{ i.ocupados }}/{{ i.total }}</span>
+</a></div>{% endfor %}</div>{% endblock %}
