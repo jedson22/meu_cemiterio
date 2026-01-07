@@ -6,10 +6,10 @@ from django.http import HttpResponse
 from django.db.models import Max
 from django.template.loader import get_template
 from xhtml2pdf import pisa
-from django.contrib.auth.decorators import login_required # Importante para bloquear acesso
+from django.contrib.auth.decorators import login_required
 from .models import Quadra, Lote, Gaveta
 
-# --- APLICAMOS @login_required EM TUDO PARA PROTEGER ---
+# --- SISTEMA PROTEGIDO COM @login_required ---
 
 @login_required
 def index(request):
@@ -64,8 +64,8 @@ def registrar_obito(request, gaveta_id):
 def limpar_gaveta(request, gaveta_id):
     gaveta = get_object_or_404(Gaveta, id=gaveta_id)
     
-    # --- LÓGICA DE SUPER PODER DO ADMIN ---
-    # Se não for admin, verifica a data
+    # --- PODER DO ADMIN ---
+    # Se NÃO for admin, obedece a regra de data. Se for Admin, passa direto.
     if not request.user.is_superuser:
         pode, msg = gaveta.situacao_exumacao
         if not pode:
@@ -86,7 +86,8 @@ def adicionar_quadra(request):
 
 @login_required
 def excluir_quadra(request, quadra_id):
-    get_object_or_404(Quadra, id=quadra_id).delete()
+    if request.user.is_superuser: # Só admin pode excluir quadra inteira
+        get_object_or_404(Quadra, id=quadra_id).delete()
     return redirect('index')
 
 @login_required
