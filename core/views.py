@@ -7,20 +7,21 @@ from django.db.models import Max
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import logout # <--- IMPORTANTE
+from django.contrib.auth import logout
 from .models import Quadra, Lote, Gaveta
 
-# --- SISTEMA PROTEGIDO COM @login_required ---
+# --- SISTEMA PROTEGIDO ---
 
 @login_required
 def index(request):
-    quadras = Quadra.objects.all().order_by('numero')
+    # OTIMIZAÇÃO AQUI: prefetch_related carrega 'lotes' e 'gavetas' numa tacada só
+    quadras = Quadra.objects.prefetch_related('lotes__gavetas').all().order_by('numero')
     return render(request, 'index.html', {'quadras': quadras})
 
 @login_required
 def detalhe_quadra(request, quadra_id):
     quadra = get_object_or_404(Quadra, id=quadra_id)
-    lotes = quadra.lotes.all().order_by('numero')
+    lotes = quadra.lotes.prefetch_related('gavetas').all().order_by('numero')
     return render(request, 'quadra.html', {'quadra': quadra, 'lotes': lotes})
 
 @login_required
@@ -28,11 +29,11 @@ def detalhe_lote(request, q_id, l_id):
     lote = get_object_or_404(Lote, quadra__numero=q_id, numero=l_id)
     return render(request, 'detalhe_lote.html', {'lote': lote})
 
-# --- AÇÕES DO SISTEMA ---
+# --- AÇÕES ---
 
 def encerrar_sessao(request):
     logout(request)
-    return redirect('login') # Manda de volta para a tela de login
+    return redirect('login')
 
 @login_required
 def vender_lote(request, lote_id):
@@ -70,20 +71,17 @@ def registrar_obito(request, gaveta_id):
 @login_required
 def limpar_gaveta(request, gaveta_id):
     gaveta = get_object_or_404(Gaveta, id=gaveta_id)
-    
-    # Se NÃO for admin, obedece a regra de data. Se for Admin, passa direto.
     if not request.user.is_superuser:
         pode, msg = gaveta.situacao_exumacao
         if not pode:
             return HttpResponse(f"ERRO: {msg}. Apenas Administradores podem desbloquear.")
-
     gaveta.nome = None
     gaveta.data = None
     gaveta.status = 'Livre'
     gaveta.save()
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
-# --- ESTRUTURA (QUADRAS E LOTES) ---
+# --- ESTRUTURA ---
 
 @login_required
 def adicionar_quadra(request):
@@ -122,9 +120,12 @@ def gerar_relatorio(request):
     total_gavetas = Gaveta.objects.count()
     gavetas_ocupadas = Gaveta.objects.filter(status='Ocupado').count()
     
+    # Gráfico
     plt.figure(figsize=(4,3))
-    plt.pie([lotes_vendidos, lotes_livres], labels=['Vendidos', 'Livres'], autopct='%1.1f%%', colors=['#3498db', '#2ecc71'])
-    plt.title('Ocupação')
+    if total_lotes > 0:
+        plt.pie([lotes_vendidos, lotes_livres], labels=['Vendidos', 'Livres'], autopct='%1.1f%%', colors=['#3498db', '#2ecc71'])
+        plt.title('Ocupação')
+    
     buffer = io.BytesIO()
     plt.savefig(buffer, format='png')
     buffer.seek(0)
@@ -134,7 +135,8 @@ def gerar_relatorio(request):
     context = {
         'total_lotes': total_lotes, 'lotes_vendidos': lotes_vendidos, 'lotes_livres': lotes_livres,
         'total_gavetas': total_gavetas, 'gavetas_ocupadas': gavetas_ocupadas,
-        'grafico': grafico_base64, 'quadras': Quadra.objects.all(),
+        'grafico': grafico_base64, 
+        'quadras': Quadra.objects.prefetch_related('lotes').all(), # Otimização aqui também
     }
     template = get_template('relatorio.html')
     html = template.render(context)
