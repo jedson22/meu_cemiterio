@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalhes do Lote</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        .box { border: 1px solid #ccc; display: inline-block; padding: 20px; border-radius: 10px; background: #f9f9f9; }
+        .gaveta { border: 1px solid #999; margin: 10px 0; padding: 10px; background: white; }
+        .livre { border-left: 5px solid green; }
+        .ocupado { border-left: 5px solid red; }
+    </style>
+</head>
+<body>
+
+    <a href="{% url 'index' %}">⬅ Voltar para o Mapa</a>
+    <hr>
+
+    <div class="box">
+        <h2>Lote {{ lote.numero }} - Quadra {{ lote.quadra.numero }}</h2>
+        
+        {% if lote.proprietario %}
+            <h3 style="color: blue;">Proprietário: {{ lote.proprietario }}</h3>
+        {% else %}
+            <h3 style="color: green;">Disponível</h3>
+        {% endif %}
+
+        <hr>
+        <h3>Gavetas</h3>
+        
+        {% for gaveta in lote.gavetas.all %}
+            <div class="gaveta {% if gaveta.status == 'Livre' %}livre{% else %}ocupado{% endif %}">
+                <strong>Gaveta {{ gaveta.numero }}</strong>: 
+                {{ gaveta.status }}
+                
+                {% if gaveta.nome %}
+                    <br>Falecido: {{ gaveta.nome }} ({{ gaveta.data|date:"d/m/Y" }})
+                    <br><i>{{ gaveta.situacao.2 }}</i>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p>Nenhuma gaveta cadastrada.</p>
+        {% endfor %}
+    </div>
+
+</body>
+</html>
