@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Helvetica, sans-serif; }
+        h1 { color: #2c3e50; text-align: center; }
+        .resumo { margin: 20px 0; padding: 10px; background: #eee; }
+        .grafico { text-align: center; margin: 30px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #999; padding: 8px; text-align: center; }
+        th { background-color: #ddd; }
+        .ocupado { color: red; }
+        .livre { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Relatório Geral do Cemitério</h1>
+    <p>Data de emissão: {% now "d/m/Y H:i" %}</p>
+
+    <div class="grafico">
+        <img src="data:image/png;base64,{{ grafico }}" width="400">
+    </div>
+
+    <div class="resumo">
+        <h3>Estatísticas</h3>
+        <p>Total de Lotes: {{ total_lotes }}</p>
+        <p>Lotes Vendidos: {{ lotes_vendidos }}</p>
+        <p>Lotes Livres: {{ lotes_livres }}</p>
+        <hr>
+        <p>Total Gavetas: {{ total_gavetas }}</p>
+        <p>Ocupadas (Sepultados): {{ gavetas_ocupadas }}</p>
+    </div>
+
+    <h3>Detalhamento por Quadra</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Quadra</th>
+                <th>Total Lotes</th>
+                <th>Ocupação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for quadra in quadras %}
+            <tr>
+                <td>Quadra {{ quadra.numero }}</td>
+                <td>{{ quadra.lotes.count }}</td>
+                <td>
+                    {% for lote in quadra.lotes.all %}
+                        <span class="{% if lote.proprietario %}ocupado{% else %}livre{% endif %}">■</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
