@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from datetime import date, timedelta
 
 class Quadra(models.Model):
@@ -19,9 +20,16 @@ class Lote(models.Model):
 
     @property
     def esta_cheio(self):
-        total = self.gavetas.count()
-        ocupadas = self.gavetas.filter(status='Ocupado').count()
-        return total > 0 and total == ocupadas
+        # OTIMIZAÇÃO: Usa a lista já carregada na memória (prefetch)
+        # em vez de fazer .count() no banco de dados
+        gavetas_lista = list(self.gavetas.all())
+        total = len(gavetas_lista)
+        
+        if total == 0:
+            return False
+            
+        ocupadas = sum(1 for g in gavetas_lista if g.status == 'Ocupado')
+        return total == ocupadas
 
 class Gaveta(models.Model):
     STATUS = [('Livre','Livre'), ('Ocupado','Ocupado')]
@@ -39,9 +47,6 @@ class Gaveta(models.Model):
     def situacao_exumacao(self):
         if not self.data: return True, "Vazio"
         hoje = date.today()
-        
-        # --- REGRA DE 2 ANOS (730 DIAS) ---
         libera = self.data + timedelta(days=730) 
-        
         if hoje >= libera: return True, "✅ Exumação Autorizada"
         return False, f"⛔ Bloqueado até {libera.strftime('%d/%m/%Y')}"
