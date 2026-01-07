@@ -2,44 +2,102 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalhes do Lote</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; }
-        .box { border: 1px solid #ccc; display: inline-block; padding: 20px; border-radius: 10px; background: #f9f9f9; }
-        .gaveta { border: 1px solid #999; margin: 10px 0; padding: 10px; background: white; }
-        .livre { border-left: 5px solid green; }
-        .ocupado { border-left: 5px solid red; }
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-voltar { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #333; font-weight: bold; font-size: 1.2em; }
+        
+        .header-lote { text-align: center; margin-bottom: 20px; }
+        .status-vendido { background: #e7f1ff; color: #0056b3; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .status-livre { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-top: 10px; }
+
+        .gaveta-card { 
+            border: 1px solid #ddd; 
+            margin: 15px 0; 
+            padding: 15px; 
+            border-radius: 8px; 
+            background: #fff;
+        }
+        .borda-livre { border-left: 5px solid #28a745; }
+        .borda-ocupado { border-left: 5px solid #dc3545; }
+
+        /* Estilo do Formulário */
+        .form-obito label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9em; }
+        .form-obito input { width: 95%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-salvar { 
+            margin-top: 15px; 
+            width: 100%; 
+            padding: 10px; 
+            background-color: #dc3545; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+        .btn-salvar:hover { background-color: #c82333; }
+
+        .dados-falecido { background-color: #fff5f5; padding: 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-    <a href="{% url 'index' %}">⬅ Voltar para o Mapa</a>
-    <hr>
-
-    <div class="box">
-        <h2>Lote {{ lote.numero }} - Quadra {{ lote.quadra.numero }}</h2>
+    <div class="container">
+        <a href="{% url 'index' %}" class="btn-voltar">⬅ Voltar para o Mapa</a>
         
-        {% if lote.proprietario %}
-            <h3 style="color: blue;">Proprietário: {{ lote.proprietario }}</h3>
-        {% else %}
-            <h3 style="color: green;">Disponível</h3>
-        {% endif %}
+        <div class="header-lote">
+            <h1>Lote {{ lote.numero }}</h1>
+            <h3>Quadra {{ lote.quadra.numero }}</h3>
+            
+            {% if lote.proprietario %}
+                <div class="status-vendido">
+                    <strong>DONO:</strong> {{ lote.proprietario }}
+                </div>
+            {% else %}
+                <div class="status-livre">
+                    Lote Disponível para Venda
+                </div>
+            {% endif %}
+        </div>
 
         <hr>
-        <h3>Gavetas</h3>
-        
+        <h2 style="text-align: center;">Gavetas</h2>
+
         {% for gaveta in lote.gavetas.all %}
-            <div class="gaveta {% if gaveta.status == 'Livre' %}livre{% else %}ocupado{% endif %}">
-                <strong>Gaveta {{ gaveta.numero }}</strong>: 
-                {{ gaveta.status }}
+            <div class="gaveta-card {% if gaveta.status == 'Livre' %}borda-livre{% else %}borda-ocupado{% endif %}">
                 
-                {% if gaveta.nome %}
-                    <br>Falecido: {{ gaveta.nome }} ({{ gaveta.data|date:"d/m/Y" }})
-                    <br><i>{{ gaveta.situacao.2 }}</i>
+                <h3 style="margin-top: 0;">⚰️ Gaveta {{ gaveta.numero }} <small style="font-weight: normal; font-size: 0.7em;">({{ gaveta.status }})</small></h3>
+
+                {% if gaveta.status == 'Livre' %}
+                    <form action="{% url 'registrar_obito' gaveta.id %}" method="POST" class="form-obito">
+                        {% csrf_token %}
+                        
+                        <label>Nome do Falecido:</label>
+                        <input type="text" name="nome_falecido" required placeholder="Nome completo...">
+                        
+                        <label>Data do Sepultamento:</label>
+                        <input type="date" name="data_obito" required>
+                        
+                        <button type="submit" class="btn-salvar">✝ Registrar Sepultamento</button>
+                    </form>
+
+                {% else %}
+                    <div class="dados-falecido">
+                        <p><strong>Nome:</strong> {{ gaveta.nome }}</p>
+                        <p><strong>Data:</strong> {{ gaveta.data|date:"d/m/Y" }}</p>
+                        
+                        <p>
+                            <strong>Situação:</strong> 
+                            <span style="background: yellow; padding: 2px;">{{ gaveta.situacao.2 }}</span>
+                        </p>
+                    </div>
                 {% endif %}
+
             </div>
         {% empty %}
-            <p>Nenhuma gaveta cadastrada.</p>
+            <p style="text-align: center;">Nenhuma gaveta criada para este lote ainda.</p>
         {% endfor %}
     </div>
 
