@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Estoque - Gestão</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-voltar { text-decoration: none; background: #333; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; }
+        
+        .box-add { background: #eef2f3; padding: 15px; margin: 20px 0; border-radius: 8px; display: flex; gap: 10px; align-items: flex-end; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 0.8em; font-weight: bold; }
+        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-add { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #34495e; color: white; padding: 10px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+        .baixa { color: red; font-weight: bold; background: #ffe6e6; padding: 2px 5px; border-radius: 3px; }
+        .normal { color: green; font-weight: bold; }
+        
+        .mini-form { display: flex; gap: 5px; }
+        .input-mini { width: 60px; padding: 5px; }
+        .btn-save { background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
+        .btn-del { color: red; text-decoration: none; font-weight: bold; font-size: 1.2em; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{% url 'index' %}" class="btn-voltar">⬅ Voltar</a>
+        <h1 style="text-align: center; margin-top: 10px;">📦 Estoque</h1>
+
+        <form action="{% url 'adicionar_produto' %}" method="POST" class="box-add">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Item</label> <input type="text" name="nome" required placeholder="Ex: Urna Ouro">
+            </div>
+            <div class="form-group">
+                <label>Categoria</label>
+                <select name="categoria">
+                    <option value="Urna">Urna</option>
+                    <option value="Quimico">Químico</option>
+                    <option value="EPI">EPI</option>
+                    <option value="Outros">Outros</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Qtd</label> <input type="number" name="quantidade" required style="width: 70px;">
+            </div>
+            <button type="submit" class="btn-add">Cadastrar</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Ações</th></tr>
+            </thead>
+            <tbody>
+                {% for p in produtos %}
+                <tr>
+                    <td>{{ p.nome }}</td>
+                    <td>{{ p.get_categoria_display }}</td>
+                    <td>
+                        {% if p.alerta_baixo %} <span class="baixa">⚠️ {{ p.quantidade }}</span>
+                        {% else %} <span class="normal">{{ p.quantidade }}</span> {% endif %}
+                    </td>
+                    <td style="display:flex; align-items:center;">
+                        <form action="{% url 'atualizar_estoque' p.id %}" method="POST" class="mini-form">
+                            {% csrf_token %}
+                            <input type="number" name="nova_quantidade" value="{{ p.quantidade }}" class="input-mini">
+                            <button type="submit" class="btn-save">💾</button>
+                        </form>
+                        {% if user.is_superuser %}
+                            <a href="{% url 'excluir_produto' p.id %}" class="btn-del" onclick="return confirm('Excluir?')">×</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center;">Estoque vazio.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
