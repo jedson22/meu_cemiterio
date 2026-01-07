@@ -7,84 +7,105 @@
     <style>
         body { font-family: sans-serif; padding: 20px; background-color: #f0f2f5; }
         
-        /* Botão Principal no Topo */
-        .btn-add-quadra { display: block; width: 100%; padding: 15px; background: #2c3e50; color: white; text-align: center; text-decoration: none; font-size: 1.2em; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
-        .btn-add-quadra:hover { background: #1a252f; }
+        /* Botões de Topo */
+        .top-controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn-big { flex: 1; padding: 15px; text-align: center; text-decoration: none; font-size: 1.1em; border-radius: 8px; font-weight: bold; color: white; }
+        .btn-blue { background: #2c3e50; }
+        .btn-grey { background: #7f8c8d; }
 
         .quadra-container { background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 5px solid #3498db; }
-        
         .header-quadra { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
-        .titulo-quadra { margin: 0; color: #333; }
         
-        .controles-quadra a { text-decoration: none; padding: 5px 10px; border-radius: 4px; color: white; font-size: 0.9em; margin-left: 5px;}
-        .btn-del-quadra { background: #c0392b; }
-        .btn-add-lote { background: #27ae60; }
-
         .lotes-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+        
         .lote-card { 
-            border: 1px solid #ddd; 
-            padding: 10px; 
+            border: 1px solid #ccc; 
+            padding: 8px; 
             width: 140px; 
             text-align: center; 
-            border-radius: 5px; 
+            border-radius: 6px; 
             background: #fff;
             position: relative;
-        }
-        .btn-del-lote {
-            position: absolute; top: 2px; right: 2px; color: red; text-decoration: none; font-weight: bold; font-size: 0.8em;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 110px;
         }
 
-        .vendido { background-color: #e7f1ff; border: 1px solid #b8daff; }
-        .livre { border: 1px solid #28a745; }
-        
-        .badge-dono { background: #007bff; color: white; padding: 3px; border-radius: 3px; font-size: 0.8em; display: block; margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-        .btn-vender { background: #28a745; color: white; border: none; padding: 5px; width: 100%; cursor: pointer; border-radius: 3px; margin-top: 5px;}
-        .btn-ver { background: #6c757d; color: white; text-decoration: none; padding: 3px 10px; border-radius: 3px; font-size: 0.8em; display: inline-block; margin-top: 5px;}
+        /* Cores baseadas no estado */
+        .estado-livre { border-bottom: 4px solid #28a745; }
+        .estado-vendido { border-bottom: 4px solid #007bff; background-color: #f0f8ff; }
+        .estado-cheio { border-bottom: 4px solid #dc3545; background-color: #fff0f0; }
+
+        .aviso-cheio { 
+            background: #dc3545; color: white; font-weight: bold; font-size: 0.7em; 
+            padding: 2px; border-radius: 3px; position: absolute; top: -8px; left: 50%; 
+            transform: translateX(-50%); width: 80%;
+        }
+
+        .badge-dono { 
+            background: #007bff; color: white; padding: 4px; border-radius: 3px; 
+            font-size: 0.8em; margin-bottom: 5px; word-break: break-word; line-height: 1.2;
+        }
+
+        .btn-acoes { margin-top: auto; display: flex; gap: 2px; }
+        .btn-small { flex: 1; border: none; padding: 5px; color: white; font-size: 0.8em; cursor: pointer; border-radius: 3px; text-decoration: none;}
+        .bg-green { background: #28a745; }
+        .bg-grey { background: #6c757d; }
+        .del-lote { position: absolute; top: 2px; right: 2px; color: #999; font-size: 0.7em; text-decoration: none;}
     </style>
 </head>
 <body>
 
-    <a href="{% url 'adicionar_quadra' %}" class="btn-add-quadra">➕ Adicionar Nova Quadra</a>
+    <div class="top-controls">
+        <a href="{% url 'adicionar_quadra' %}" class="btn-big btn-blue">➕ Nova Quadra</a>
+        <a href="{% url 'gerar_relatorio' %}" class="btn-big btn-grey">📄 Relatório PDF</a>
+    </div>
 
     {% for quadra in quadras %}
         <div class="quadra-container">
             <div class="header-quadra">
-                <h2 class="titulo-quadra">Quadra {{ quadra.numero }}</h2>
-                <div class="controles-quadra">
-                    <a href="{% url 'adicionar_lote' quadra.id %}" class="btn-add-lote">➕ Lote</a>
-                    <a href="{% url 'excluir_quadra' quadra.id %}" class="btn-del-quadra" onclick="return confirm('Tem certeza? Isso apagará todos os lotes desta quadra!')">🗑 Excluir</a>
+                <h3>Quadra {{ quadra.numero }}</h3>
+                <div>
+                    <a href="{% url 'adicionar_lote' quadra.id %}" style="text-decoration:none; background:#27ae60; color:white; padding:5px 10px; border-radius:4px;">+ Lote</a>
+                    <a href="{% url 'excluir_quadra' quadra.id %}" style="text-decoration:none; background:#c0392b; color:white; padding:5px 10px; border-radius:4px;" onclick="return confirm('Apagar quadra?')">🗑</a>
                 </div>
             </div>
             
             <div class="lotes-grid">
-                {% for lote in quadra.lotes.all %}
-                    <div class="lote-card {% if lote.proprietario %}vendido{% else %}livre{% endif %}">
+                {% for lote in quadra.lotes.all %} <div class="lote-card {% if lote.esta_cheio %}estado-cheio{% elif lote.proprietario %}estado-vendido{% else %}estado-livre{% endif %}">
                         
-                        <a href="{% url 'excluir_lote' lote.id %}" class="btn-del-lote" onclick="return confirm('Apagar Lote {{ lote.numero }}?')">X</a>
+                        <a href="{% url 'excluir_lote' lote.id %}" class="del-lote" onclick="return confirm('Excluir lote?')">✕</a>
 
-                        {% if lote.proprietario %}
-                            <span class="badge-dono">{{ lote.proprietario }}</span>
+                        {% if lote.esta_cheio %}
+                            <div class="aviso-cheio">⛔ LOTADO</div>
                         {% endif %}
 
-                        <strong>Lote {{ lote.numero }}</strong>
-                        
-                        {% if not lote.proprietario %}
-                            <form action="{% url 'vender_lote' lote.id %}" method="POST">
-                                {% csrf_token %}
-                                <input type="text" name="nome_comprador" placeholder="Cliente..." required style="width: 90%; font-size: 0.8em; margin-bottom: 2px;">
-                                <button type="submit" class="btn-vender">💲</button>
-                            </form>
-                        {% endif %}
-                        
-                        <a href="{% url 'detalhe_lote' quadra.numero lote.numero %}" class="btn-ver">Gavetas</a>
+                        <div style="margin-top: 10px;">
+                            {% if lote.proprietario %}
+                                <div class="badge-dono">{{ lote.proprietario }}</div>
+                            {% endif %}
+                            
+                            <strong>Lote {{ lote.numero }}</strong>
+                        </div>
+
+                        <div class="btn-acoes">
+                            {% if not lote.proprietario %}
+                                <form action="{% url 'vender_lote' lote.id %}" method="POST" style="flex:1;">
+                                    {% csrf_token %}
+                                    <input type="text" name="nome_comprador" placeholder="Nome..." required style="width:100%; box-sizing:border-box; font-size:0.8em; margin-bottom:2px;">
+                                    <button type="submit" class="btn-small bg-green">Vender</button>
+                                </form>
+                            {% endif %}
+                            <a href="{% url 'detalhe_lote' quadra.numero lote.numero %}" class="btn-small bg-grey">Gavetas</a>
+                        </div>
+
                     </div>
                 {% empty %}
-                    <p style="color: #777; width: 100%; text-align: center;">Nenhum lote. Clique em "+ Lote" acima.</p>
+                    <p style="color:#999; padding:20px;">Nenhum lote criado.</p>
                 {% endfor %}
             </div>
         </div>
-    {% empty %}
-        <p style="text-align: center; margin-top: 50px; font-size: 1.2em;">O cemitério está vazio. Comece clicando no botão acima!</p>
     {% endfor %}
 
 </body>
