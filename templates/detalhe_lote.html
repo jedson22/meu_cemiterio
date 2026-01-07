@@ -1,76 +1,18 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Gerenciar Lote</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .btn-voltar { text-decoration: none; background: #333; color: white; padding: 8px 15px; border-radius: 5px; }
-        
-        /* Área do Proprietário */
-        .box-dono { background: #e7f1ff; border: 1px solid #b8daff; padding: 15px; border-radius: 8px; margin: 20px 0; }
-        .form-transfer { margin-top: 10px; display: flex; gap: 5px; }
-        .form-transfer input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn-transfer { background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+{% if gaveta.nome %}
+    
+    {% if gaveta.situacao_exumacao.0 %}
+        <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-exumar" onclick="return confirm('Confirmar exumação?')">🗑 Exumar</a>
+    
+    {% elif user.is_superuser %}
+        <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-exumar" style="background: purple;" onclick="return confirm('⚠️ ATENÇÃO ADMIN: O prazo de 2 anos ainda não venceu. Deseja forçar a exumação?')">⚡ Desbloquear Admin</a>
+        <br><br>
+        <span class="tag-bloqueado">⛔ {{ gaveta.situacao_exumacao.1 }}</span>
 
-        .gaveta-item { border: 1px solid #ddd; margin-bottom: 15px; padding: 10px; border-radius: 5px; }
-        .livre { border-left: 5px solid green; }
-        .ocupado { border-left: 5px solid red; background: #fff5f5; }
-        
-        .btn-exumar { background: #c0392b; color: white; padding: 5px; text-decoration: none; font-size: 0.8em; border-radius: 3px; float: right; }
-        .tag-bloqueado { background: #555; color: white; padding: 5px; font-size: 0.8em; border-radius: 3px; float: right; cursor: not-allowed; }
-    </style>
-</head>
-<body>
+    {% else %}
+        <span class="tag-bloqueado">⛔ {{ gaveta.situacao_exumacao.1 }}</span>
+    {% endif %}
+    
+    <p><strong>Falecido:</strong> {{ gaveta.nome }}</p>
+    <p><strong>Sepultamento:</strong> {{ gaveta.data|date:"d/m/Y" }}</p>
 
-    <div class="container">
-        <a href="{% url 'index' %}" class="btn-voltar">⬅ Voltar</a>
-        <h2 style="text-align: center;">Lote {{ lote.numero }} - Quadra {{ lote.quadra.numero }}</h2>
-
-        {% if lote.proprietario %}
-            <div class="box-dono">
-                <strong>Proprietário Atual:</strong> {{ lote.proprietario }}
-                <hr style="border: 0; border-top: 1px solid #cbdceb; margin: 10px 0;">
-                
-                <label style="font-size: 0.9em; color: #555;">Transferir Titularidade:</label>
-                <form action="{% url 'transferir_lote' lote.id %}" method="POST" class="form-transfer">
-                    {% csrf_token %}
-                    <input type="text" name="novo_titular" placeholder="Nome do novo dono..." required>
-                    <button type="submit" class="btn-transfer">🔄 Transferir</button>
-                </form>
-            </div>
-        {% else %}
-            <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; text-align: center;">
-                Lote Disponível
-            </div>
-        {% endif %}
-
-        <h3>Gavetas</h3>
-        {% for gaveta in lote.gavetas.all %}
-            <div class="gaveta-item {% if gaveta.nome %}ocupado{% else %}livre{% endif %}">
-                
-                {% if gaveta.nome %}
-                    {% if gaveta.situacao_exumacao.0 %}
-                        <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-exumar" onclick="return confirm('Tem certeza?')">🗑 Exumar</a>
-                    {% else %}
-                        <span class="tag-bloqueado">{{ gaveta.situacao_exumacao.1 }}</span>
-                    {% endif %}
-                    
-                    <strong>Gaveta {{ gaveta.numero }}:</strong> {{ gaveta.nome }} <br>
-                    <small>Data: {{ gaveta.data|date:"d/m/Y" }}</small>
-                {% else %}
-                    <strong>Gaveta {{ gaveta.numero }}:</strong> Livre
-                    <form action="{% url 'registrar_obito' gaveta.id %}" method="POST" style="margin-top: 5px;">
-                        {% csrf_token %}
-                        <input type="text" name="nome_falecido" placeholder="Falecido" required style="width: 40%;">
-                        <input type="date" name="data_obito" required>
-                        <button type="submit">Salvar</button>
-                    </form>
-                {% endif %}
-            </div>
-        {% endfor %}
-    </div>
-
-</body>
-</html>
+{% else %}
