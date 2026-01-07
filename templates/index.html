@@ -47,7 +47,7 @@
             <a href="/admin/" class="btn-big btn-purple" target="_blank">⚙️ Gerenciar Usuários</a>
         {% endif %}
         
-        <a href="/accounts/logout/" class="btn-big btn-black">🚪 Sair ({{ user.username }})</a>
+        <a href="{% url 'sair' %}" class="btn-big btn-black">🚪 Sair ({{ user.username }})</a>
     </div>
 
     {% for quadra in quadras %}
