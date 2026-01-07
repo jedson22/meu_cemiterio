@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Cemitério</title>
+    <title>Gestão Cemitério</title>
     <style>
         body { font-family: sans-serif; padding: 20px; background-color: #f0f2f5; }
         
+        .alert-estoque { background: #e74c3c; color: white; padding: 10px; text-align: center; border-radius: 5px; margin-bottom: 15px; font-weight: bold; animation: piscar 2s infinite; }
+        @keyframes piscar { 0% {opacity: 1;} 50% {opacity: 0.8;} 100% {opacity: 1;} }
+
         .top-controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .btn-big { flex: 1; padding: 15px; text-align: center; text-decoration: none; font-size: 1em; border-radius: 8px; font-weight: bold; color: white; min-width: 150px; }
+        .btn-big { flex: 1; padding: 15px; text-align: center; text-decoration: none; font-size: 1em; border-radius: 8px; font-weight: bold; color: white; min-width: 140px; }
         .btn-blue { background: #2c3e50; }
+        .btn-orange { background: #d35400; }
         .btn-grey { background: #7f8c8d; }
         .btn-purple { background: #8e44ad; }
         .btn-black { background: #000; }
@@ -18,10 +22,7 @@
         .header-quadra { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
         
         .lotes-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-        .lote-card { 
-            border: 1px solid #ccc; padding: 8px; width: 140px; text-align: center; border-radius: 6px; 
-            background: #fff; position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 110px;
-        }
+        .lote-card { border: 1px solid #ccc; padding: 8px; width: 140px; text-align: center; border-radius: 6px; background: #fff; position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 110px; }
 
         .estado-livre { border-bottom: 4px solid #28a745; }
         .estado-vendido { border-bottom: 4px solid #007bff; background-color: #f0f8ff; }
@@ -39,15 +40,16 @@
 </head>
 <body>
 
+    {% if alerta_estoque > 0 %}
+        <div class="alert-estoque">⚠️ ALERTA: {{ alerta_estoque }} itens com estoque baixo!</div>
+    {% endif %}
+
     <div class="top-controls">
-        <a href="{% url 'adicionar_quadra' %}" class="btn-big btn-blue">➕ Nova Quadra</a>
+        <a href="{% url 'adicionar_quadra' %}" class="btn-big btn-blue">➕ Quadra</a>
+        <a href="{% url 'lista_estoque' %}" class="btn-big btn-orange">📦 Estoque</a>
         <a href="{% url 'gerar_relatorio' %}" class="btn-big btn-grey">📄 PDF</a>
-        
-        {% if user.is_superuser %}
-            <a href="/admin/" class="btn-big btn-purple" target="_blank">⚙️ Gerenciar Usuários</a>
-        {% endif %}
-        
-        <a href="{% url 'sair' %}" class="btn-big btn-black">🚪 Sair ({{ user.username }})</a>
+        {% if user.is_superuser %} <a href="/admin/" class="btn-big btn-purple" target="_blank">⚙️ Admin</a> {% endif %}
+        <a href="{% url 'sair' %}" class="btn-big btn-black">🚪 Sair</a>
     </div>
 
     {% for quadra in quadras %}
@@ -57,7 +59,7 @@
                 <div>
                     <a href="{% url 'adicionar_lote' quadra.id %}" style="text-decoration:none; background:#27ae60; color:white; padding:5px 10px; border-radius:4px;">+ Lote</a>
                     {% if user.is_superuser %}
-                        <a href="{% url 'excluir_quadra' quadra.id %}" style="text-decoration:none; background:#c0392b; color:white; padding:5px 10px; border-radius:4px;" onclick="return confirm('ATENÇÃO ADMIN: Apagar quadra inteira?')">🗑</a>
+                        <a href="{% url 'excluir_quadra' quadra.id %}" style="text-decoration:none; background:#c0392b; color:white; padding:5px 10px; border-radius:4px;" onclick="return confirm('Apagar quadra?')">🗑</a>
                     {% endif %}
                 </div>
             </div>
@@ -66,14 +68,11 @@
                 {% for lote in quadra.lotes.all %}
                     <div class="lote-card {% if lote.esta_cheio %}estado-cheio{% elif lote.proprietario %}estado-vendido{% else %}estado-livre{% endif %}">
                         <a href="{% url 'excluir_lote' lote.id %}" class="del-lote" onclick="return confirm('Excluir lote?')">✕</a>
-
                         {% if lote.esta_cheio %} <div class="aviso-cheio">⛔ LOTADO</div> {% endif %}
-
                         <div style="margin-top: 10px;">
                             {% if lote.proprietario %} <div class="badge-dono">{{ lote.proprietario }}</div> {% endif %}
                             <strong>Lote {{ lote.numero }}</strong>
                         </div>
-
                         <div class="btn-acoes">
                             {% if not lote.proprietario %}
                                 <form action="{% url 'vender_lote' lote.id %}" method="POST" style="flex:1;">
@@ -91,6 +90,5 @@
             </div>
         </div>
     {% endfor %}
-
 </body>
 </html>
