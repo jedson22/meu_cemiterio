@@ -5,66 +5,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Cemitério</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
-        .quadra-container { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .titulo-quadra { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+        body { font-family: sans-serif; padding: 20px; background-color: #f0f2f5; }
+        
+        /* Botão Principal no Topo */
+        .btn-add-quadra { display: block; width: 100%; padding: 15px; background: #2c3e50; color: white; text-align: center; text-decoration: none; font-size: 1.2em; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
+        .btn-add-quadra:hover { background: #1a252f; }
+
+        .quadra-container { background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 5px solid #3498db; }
+        
+        .header-quadra { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .titulo-quadra { margin: 0; color: #333; }
+        
+        .controles-quadra a { text-decoration: none; padding: 5px 10px; border-radius: 4px; color: white; font-size: 0.9em; margin-left: 5px;}
+        .btn-del-quadra { background: #c0392b; }
+        .btn-add-lote { background: #27ae60; }
+
         .lotes-grid { display: flex; flex-wrap: wrap; gap: 10px; }
         .lote-card { 
             border: 1px solid #ddd; 
             padding: 10px; 
-            width: 150px; 
+            width: 140px; 
             text-align: center; 
             border-radius: 5px; 
             background: #fff;
+            position: relative;
         }
-        .vendido { border-color: #007bff; background-color: #e7f1ff; }
-        .livre { border-color: #28a745; }
+        .btn-del-lote {
+            position: absolute; top: 2px; right: 2px; color: red; text-decoration: none; font-weight: bold; font-size: 0.8em;
+        }
+
+        .vendido { background-color: #e7f1ff; border: 1px solid #b8daff; }
+        .livre { border: 1px solid #28a745; }
         
-        .badge-dono { background: #007bff; color: white; padding: 3px; border-radius: 3px; font-size: 0.8em; margin-bottom: 5px; display: block; }
-        .btn-vender { background: #28a745; color: white; border: none; padding: 5px; width: 100%; cursor: pointer; border-radius: 3px; }
-        .btn-ver { background: #6c757d; color: white; text-decoration: none; padding: 3px 10px; border-radius: 3px; font-size: 0.8em; }
+        .badge-dono { background: #007bff; color: white; padding: 3px; border-radius: 3px; font-size: 0.8em; display: block; margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+        .btn-vender { background: #28a745; color: white; border: none; padding: 5px; width: 100%; cursor: pointer; border-radius: 3px; margin-top: 5px;}
+        .btn-ver { background: #6c757d; color: white; text-decoration: none; padding: 3px 10px; border-radius: 3px; font-size: 0.8em; display: inline-block; margin-top: 5px;}
     </style>
 </head>
 <body>
 
-    <h1>🗺️ Mapa do Cemitério</h1>
+    <a href="{% url 'adicionar_quadra' %}" class="btn-add-quadra">➕ Adicionar Nova Quadra</a>
 
     {% for quadra in quadras %}
         <div class="quadra-container">
-            <h2 class="titulo-quadra">Quadra {{ quadra.numero }}</h2>
+            <div class="header-quadra">
+                <h2 class="titulo-quadra">Quadra {{ quadra.numero }}</h2>
+                <div class="controles-quadra">
+                    <a href="{% url 'adicionar_lote' quadra.id %}" class="btn-add-lote">➕ Lote</a>
+                    <a href="{% url 'excluir_quadra' quadra.id %}" class="btn-del-quadra" onclick="return confirm('Tem certeza? Isso apagará todos os lotes desta quadra!')">🗑 Excluir</a>
+                </div>
+            </div>
             
             <div class="lotes-grid">
                 {% for lote in quadra.lotes.all %}
                     <div class="lote-card {% if lote.proprietario %}vendido{% else %}livre{% endif %}">
                         
+                        <a href="{% url 'excluir_lote' lote.id %}" class="btn-del-lote" onclick="return confirm('Apagar Lote {{ lote.numero }}?')">X</a>
+
                         {% if lote.proprietario %}
                             <span class="badge-dono">{{ lote.proprietario }}</span>
                         {% endif %}
 
                         <strong>Lote {{ lote.numero }}</strong>
-                        <br><br>
-
+                        
                         {% if not lote.proprietario %}
                             <form action="{% url 'vender_lote' lote.id %}" method="POST">
                                 {% csrf_token %}
-                                <input type="text" name="nome_comprador" placeholder="Nome..." required style="width: 80%; margin-bottom: 3px;">
-                                <button type="submit" class="btn-vender">💲 Vender</button>
+                                <input type="text" name="nome_comprador" placeholder="Cliente..." required style="width: 90%; font-size: 0.8em; margin-bottom: 2px;">
+                                <button type="submit" class="btn-vender">💲</button>
                             </form>
-                        {% else %}
-                            <small style="color: blue;">Vendido</small>
                         {% endif %}
                         
-                        <div style="margin-top: 5px;">
-                            <a href="{% url 'detalhe_lote' quadra.numero lote.numero %}" class="btn-ver">Ver Gavetas</a>
-                        </div>
+                        <a href="{% url 'detalhe_lote' quadra.numero lote.numero %}" class="btn-ver">Gavetas</a>
                     </div>
                 {% empty %}
-                    <p>Nenhum lote cadastrado nesta quadra.</p>
+                    <p style="color: #777; width: 100%; text-align: center;">Nenhum lote. Clique em "+ Lote" acima.</p>
                 {% endfor %}
             </div>
         </div>
     {% empty %}
-        <p>Nenhuma quadra cadastrada.</p>
+        <p style="text-align: center; margin-top: 50px; font-size: 1.2em;">O cemitério está vazio. Comece clicando no botão acima!</p>
     {% endfor %}
 
 </body>
