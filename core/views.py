@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404, redirect
 from .models import Lote
 
+
 def vender_lote(request, lote_id):
     if request.method == "POST":
         lote = get_object_or_404(Lote, id=lote_id)
