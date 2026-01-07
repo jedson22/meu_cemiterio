@@ -4,71 +4,73 @@
     <meta charset="UTF-8">
     <title>Gerenciar Lote</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; text-align: center; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .btn-voltar { display: inline-block; margin-bottom: 20px; text-decoration: none; background: #333; color: white; padding: 10px; border-radius: 5px; }
+        .btn-voltar { text-decoration: none; background: #333; color: white; padding: 8px 15px; border-radius: 5px; }
         
-        .box-proprietario { background: #e7f1ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #b8daff; }
-        .form-transferir { margin-top: 10px; display: flex; gap: 5px; justify-content: center; }
-        
-        .gaveta-card { border: 1px solid #ddd; margin: 15px 0; padding: 15px; border-radius: 8px; text-align: left; position: relative; }
-        .livre { border-left: 5px solid #28a745; background: #f9fff9; }
-        .ocupado { border-left: 5px solid #dc3545; background: #fff5f5; }
+        /* Área do Proprietário */
+        .box-dono { background: #e7f1ff; border: 1px solid #b8daff; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .form-transfer { margin-top: 10px; display: flex; gap: 5px; }
+        .form-transfer input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-transfer { background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
 
-        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn-salvar { background: #28a745; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 4px; }
-        .btn-transferir { background: #007bff; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 4px; }
+        .gaveta-item { border: 1px solid #ddd; margin-bottom: 15px; padding: 10px; border-radius: 5px; }
+        .livre { border-left: 5px solid green; }
+        .ocupado { border-left: 5px solid red; background: #fff5f5; }
         
-        .btn-exumar { position: absolute; top: 10px; right: 10px; background: #c0392b; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; }
-        .btn-bloqueado { position: absolute; top: 10px; right: 10px; background: #999; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; cursor: not-allowed; }
+        .btn-exumar { background: #c0392b; color: white; padding: 5px; text-decoration: none; font-size: 0.8em; border-radius: 3px; float: right; }
+        .tag-bloqueado { background: #555; color: white; padding: 5px; font-size: 0.8em; border-radius: 3px; float: right; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <a href="{% url 'index' %}" class="btn-voltar">⬅ Voltar ao Mapa</a>
-        <h1>Lote {{ lote.numero }} (Q. {{ lote.quadra.numero }})</h1>
-        
+        <a href="{% url 'index' %}" class="btn-voltar">⬅ Voltar</a>
+        <h2 style="text-align: center;">Lote {{ lote.numero }} - Quadra {{ lote.quadra.numero }}</h2>
+
         {% if lote.proprietario %}
-            <div class="box-proprietario">
-                <h3>Titular Atual: {{ lote.proprietario }}</h3>
-                <hr>
-                <form action="{% url 'transferir_lote' lote.id %}" method="POST" class="form-transferir">
+            <div class="box-dono">
+                <strong>Proprietário Atual:</strong> {{ lote.proprietario }}
+                <hr style="border: 0; border-top: 1px solid #cbdceb; margin: 10px 0;">
+                
+                <label style="font-size: 0.9em; color: #555;">Transferir Titularidade:</label>
+                <form action="{% url 'transferir_lote' lote.id %}" method="POST" class="form-transfer">
                     {% csrf_token %}
-                    <input type="text" name="novo_titular" placeholder="Novo nome..." required>
-                    <button type="submit" class="btn-transferir">🔁 Transferir</button>
+                    <input type="text" name="novo_titular" placeholder="Nome do novo dono..." required>
+                    <button type="submit" class="btn-transfer">🔄 Transferir</button>
                 </form>
             </div>
         {% else %}
-            <h3 style="color: green;">Lote Disponível para Venda</h3>
+            <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; text-align: center;">
+                Lote Disponível
+            </div>
         {% endif %}
 
-        <hr>
-
+        <h3>Gavetas</h3>
         {% for gaveta in lote.gavetas.all %}
-            <div class="gaveta-card {% if gaveta.nome %}ocupado{% else %}livre{% endif %}">
-                <h3>⚰️ Gaveta {{ gaveta.numero }}</h3>
-
+            <div class="gaveta-item {% if gaveta.nome %}ocupado{% else %}livre{% endif %}">
+                
                 {% if gaveta.nome %}
                     {% if gaveta.situacao_exumacao.0 %}
-                        <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-exumar" onclick="return confirm('Confirmar exumação?')">🗑 Exumar/Limpar</a>
+                        <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-exumar" onclick="return confirm('Tem certeza?')">🗑 Exumar</a>
                     {% else %}
-                        <span class="btn-bloqueado" title="Lei de 3 anos">⛔ {{ gaveta.situacao_exumacao.1 }}</span>
+                        <span class="tag-bloqueado">{{ gaveta.situacao_exumacao.1 }}</span>
                     {% endif %}
                     
-                    <p><strong>Falecido:</strong> {{ gaveta.nome }}</p>
-                    <p><strong>Sepultamento:</strong> {{ gaveta.data|date:"d/m/Y" }}</p>
-
+                    <strong>Gaveta {{ gaveta.numero }}:</strong> {{ gaveta.nome }} <br>
+                    <small>Data: {{ gaveta.data|date:"d/m/Y" }}</small>
                 {% else %}
-                    <form action="{% url 'registrar_obito' gaveta.id %}" method="POST">
+                    <strong>Gaveta {{ gaveta.numero }}:</strong> Livre
+                    <form action="{% url 'registrar_obito' gaveta.id %}" method="POST" style="margin-top: 5px;">
                         {% csrf_token %}
-                        <label>Falecido:</label> <input type="text" name="nome_falecido" required>
-                        <label>Data:</label> <input type="date" name="data_obito" required>
-                        <button type="submit" class="btn-salvar">💾 Salvar</button>
+                        <input type="text" name="nome_falecido" placeholder="Falecido" required style="width: 40%;">
+                        <input type="date" name="data_obito" required>
+                        <button type="submit">Salvar</button>
                     </form>
                 {% endif %}
             </div>
         {% endfor %}
     </div>
+
 </body>
 </html>
