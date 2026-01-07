@@ -7,7 +7,7 @@ SECRET_KEY = 'chave-super-secreta-local'
 
 # DICA: No Render, é bom usar DEBUG = False, mas localmente pode ser True.
 # O código abaixo verifica se está no Render para decidir.
-DEBUG = DEBUG = True
+DEBUG = DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
