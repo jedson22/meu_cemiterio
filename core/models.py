@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import User # Importamos o usuário
 from datetime import date, timedelta
 
 class Quadra(models.Model):
@@ -41,7 +40,7 @@ class Gaveta(models.Model):
         if not self.data: return True, "Vazio"
         hoje = date.today()
         
-        # --- MUDANÇA AQUI: 2 ANOS = 730 DIAS ---
+        # --- REGRA DE 2 ANOS (730 DIAS) ---
         libera = self.data + timedelta(days=730) 
         
         if hoje >= libera: return True, "✅ Exumação Autorizada"
