@@ -3,6 +3,10 @@ from datetime import date, timedelta
 
 class Quadra(models.Model):
     numero = models.IntegerField(unique=True)
+    
+    class Meta:
+        ordering = ['numero'] # Garante ordem das quadras
+        
     def __str__(self): return f"Quadra {self.numero}"
 
 class Lote(models.Model):
@@ -12,9 +16,17 @@ class Lote(models.Model):
 
     class Meta: 
         unique_together = ('quadra', 'numero')
-        ordering = ['numero']
+        ordering = ['numero'] # <--- ISSO CONSERTA A ORDEM DOS LOTES (1, 2, 3...)
     
     def __str__(self): return f"Q{self.quadra.numero}-L{self.numero}"
+
+    @property
+    def esta_cheio(self):
+        """Verifica se todas as gavetas estão ocupadas"""
+        total = self.gavetas.count()
+        ocupadas = self.gavetas.filter(status='Ocupado').count()
+        # Só está cheio se tiver gavetas e todas estiverem ocupadas
+        return total > 0 and total == ocupadas
 
 class Gaveta(models.Model):
     STATUS = [('Livre','Livre'), ('Ocupado','Ocupado')]
@@ -24,19 +36,15 @@ class Gaveta(models.Model):
     nome = models.CharField(max_length=200, blank=True, null=True)
     data = models.DateField(blank=True, null=True)
     
-    class Meta: unique_together = ('lote', 'numero')
+    class Meta: 
+        unique_together = ('lote', 'numero')
+        ordering = ['numero'] # Garante ordem das gavetas
 
     @property
     def situacao_exumacao(self):
-        """Retorna (Pode Exumar?, Texto Explicativo)"""
-        if not self.data:
-            return True, "Vazio"
-        
-        # Regra: 3 anos (1095 dias) para exumação
+        if not self.data: return True, "Vazio"
         hoje = date.today()
-        data_liberacao = self.data + timedelta(days=1095) # 3 anos
-        
-        if hoje >= data_liberacao:
-            return True, "✅ Exumação Autorizada"
-        else:
-            return False, f"⛔ Bloqueado até {data_liberacao.strftime('%d/%m/%Y')}"
+        # Bloqueio de 3 anos (1095 dias)
+        libera = self.data + timedelta(days=1095)
+        if hoje >= libera: return True, "✅ Exumação Autorizada"
+        return False, f"⛔ Bloqueado até {libera.strftime('%d/%m/%Y')}"
