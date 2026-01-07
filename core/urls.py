@@ -7,5 +7,5 @@ urlpatterns = [
     path('lote/<int:q_id>/<int:l_id>/excluir/', views.excluir_lote, name='excluir_lote'),
     path('config/', views.config, name='config'),
     path('exportar/', views.exportar, name='exportar'),
-path('vender-lote/<int:lote_id>/', views.vender_lote, name='vender_lote'),
+    path('vender-lote/<int:lote_id>/', views.vender_lote, name='vender_lote'),
 ]
