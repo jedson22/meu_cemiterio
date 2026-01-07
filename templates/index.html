@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Cemitério</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
+        .quadra-container { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .titulo-quadra { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+        .lotes-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+        .lote-card { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            width: 150px; 
+            text-align: center; 
+            border-radius: 5px; 
+            background: #fff;
+        }
+        .vendido { border-color: #007bff; background-color: #e7f1ff; }
+        .livre { border-color: #28a745; }
+        
+        .badge-dono { background: #007bff; color: white; padding: 3px; border-radius: 3px; font-size: 0.8em; margin-bottom: 5px; display: block; }
+        .btn-vender { background: #28a745; color: white; border: none; padding: 5px; width: 100%; cursor: pointer; border-radius: 3px; }
+        .btn-ver { background: #6c757d; color: white; text-decoration: none; padding: 3px 10px; border-radius: 3px; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+
+    <h1>🗺️ Mapa do Cemitério</h1>
+
+    {% for quadra in quadras %}
+        <div class="quadra-container">
+            <h2 class="titulo-quadra">Quadra {{ quadra.numero }}</h2>
+            
+            <div class="lotes-grid">
+                {% for lote in quadra.lotes.all %}
+                    <div class="lote-card {% if lote.proprietario %}vendido{% else %}livre{% endif %}">
+                        
+                        {% if lote.proprietario %}
+                            <span class="badge-dono">{{ lote.proprietario }}</span>
+                        {% endif %}
+
+                        <strong>Lote {{ lote.numero }}</strong>
+                        <br><br>
+
+                        {% if not lote.proprietario %}
+                            <form action="{% url 'vender_lote' lote.id %}" method="POST">
+                                {% csrf_token %}
+                                <input type="text" name="nome_comprador" placeholder="Nome..." required style="width: 80%; margin-bottom: 3px;">
+                                <button type="submit" class="btn-vender">💲 Vender</button>
+                            </form>
+                        {% else %}
+                            <small style="color: blue;">Vendido</small>
+                        {% endif %}
+                        
+                        <div style="margin-top: 5px;">
+                            <a href="{% url 'detalhe_lote' quadra.numero lote.numero %}" class="btn-ver">Ver Gavetas</a>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p>Nenhum lote cadastrado nesta quadra.</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% empty %}
+        <p>Nenhuma quadra cadastrada.</p>
+    {% endfor %}
+
+</body>
+</html>
