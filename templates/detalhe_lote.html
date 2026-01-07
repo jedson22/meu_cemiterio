@@ -2,73 +2,73 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Gerenciar Gavetas</title>
+    <title>Gerenciar Lote</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; text-align: center; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; text-align: center; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .btn-voltar { display: inline-block; margin-bottom: 20px; text-decoration: none; background: #333; color: white; padding: 10px 20px; border-radius: 5px; }
+        .btn-voltar { display: inline-block; margin-bottom: 20px; text-decoration: none; background: #333; color: white; padding: 10px; border-radius: 5px; }
         
-        .gaveta-card { 
-            border: 1px solid #ddd; 
-            margin: 20px 0; 
-            padding: 15px; 
-            border-radius: 8px; 
-            text-align: left;
-            position: relative;
-        }
-        .livre { border-left: 5px solid #28a745; background-color: #f9fff9; }
-        .ocupado { border-left: 5px solid #dc3545; background-color: #fff5f5; }
+        .box-proprietario { background: #e7f1ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #b8daff; }
+        .form-transferir { margin-top: 10px; display: flex; gap: 5px; justify-content: center; }
+        
+        .gaveta-card { border: 1px solid #ddd; margin: 15px 0; padding: 15px; border-radius: 8px; text-align: left; position: relative; }
+        .livre { border-left: 5px solid #28a745; background: #f9fff9; }
+        .ocupado { border-left: 5px solid #dc3545; background: #fff5f5; }
 
-        input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin: 5px 0; width: 95%; display: block; }
-        label { font-weight: bold; margin-top: 10px; display: block;}
+        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-salvar { background: #28a745; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 4px; }
+        .btn-transferir { background: #007bff; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 4px; }
         
-        .btn-salvar { padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1em;}
-        .btn-limpar { position: absolute; top: 10px; right: 10px; background: #c0392b; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; }
+        .btn-exumar { position: absolute; top: 10px; right: 10px; background: #c0392b; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; }
+        .btn-bloqueado { position: absolute; top: 10px; right: 10px; background: #999; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <a href="{% url 'index' %}" class="btn-voltar">⬅ Voltar ao Mapa</a>
-        
         <h1>Lote {{ lote.numero }} (Q. {{ lote.quadra.numero }})</h1>
         
         {% if lote.proprietario %}
-            <h3 style="color: blue;">Proprietário: {{ lote.proprietario }}</h3>
+            <div class="box-proprietario">
+                <h3>Titular Atual: {{ lote.proprietario }}</h3>
+                <hr>
+                <form action="{% url 'transferir_lote' lote.id %}" method="POST" class="form-transferir">
+                    {% csrf_token %}
+                    <input type="text" name="novo_titular" placeholder="Novo nome..." required>
+                    <button type="submit" class="btn-transferir">🔁 Transferir</button>
+                </form>
+            </div>
         {% else %}
-            <h3 style="color: green;">Lote Disponível</h3>
+            <h3 style="color: green;">Lote Disponível para Venda</h3>
         {% endif %}
 
         <hr>
 
         {% for gaveta in lote.gavetas.all %}
             <div class="gaveta-card {% if gaveta.nome %}ocupado{% else %}livre{% endif %}">
-                
                 <h3>⚰️ Gaveta {{ gaveta.numero }}</h3>
 
                 {% if gaveta.nome %}
-                    <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-limpar" onclick="return confirm('Tem certeza que deseja remover este registro? A gaveta ficará vazia.')">🗑 Limpar/Exumar</a>
+                    {% if gaveta.situacao_exumacao.0 %}
+                        <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-exumar" onclick="return confirm('Confirmar exumação?')">🗑 Exumar/Limpar</a>
+                    {% else %}
+                        <span class="btn-bloqueado" title="Lei de 3 anos">⛔ {{ gaveta.situacao_exumacao.1 }}</span>
+                    {% endif %}
                     
                     <p><strong>Falecido:</strong> {{ gaveta.nome }}</p>
-                    <p><strong>Data:</strong> {{ gaveta.data|date:"d/m/Y" }}</p>
-                    <p><strong>Situação:</strong> {{ gaveta.situacao.2 }}</p>
+                    <p><strong>Sepultamento:</strong> {{ gaveta.data|date:"d/m/Y" }}</p>
 
                 {% else %}
                     <form action="{% url 'registrar_obito' gaveta.id %}" method="POST">
                         {% csrf_token %}
-                        <label>Nome do Falecido:</label>
-                        <input type="text" name="nome_falecido" required placeholder="Nome completo...">
-                        
-                        <label>Data do Óbito:</label>
-                        <input type="date" name="data_obito" required>
-                        
-                        <button type="submit" class="btn-salvar">💾 Registrar Sepultamento</button>
+                        <label>Falecido:</label> <input type="text" name="nome_falecido" required>
+                        <label>Data:</label> <input type="date" name="data_obito" required>
+                        <button type="submit" class="btn-salvar">💾 Salvar</button>
                     </form>
                 {% endif %}
-
             </div>
         {% endfor %}
     </div>
-
 </body>
 </html>
