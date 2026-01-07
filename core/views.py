@@ -7,6 +7,7 @@ from django.db.models import Max
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout # <--- IMPORTANTE
 from .models import Quadra, Lote, Gaveta
 
 # --- SISTEMA PROTEGIDO COM @login_required ---
@@ -26,6 +27,12 @@ def detalhe_quadra(request, quadra_id):
 def detalhe_lote(request, q_id, l_id):
     lote = get_object_or_404(Lote, quadra__numero=q_id, numero=l_id)
     return render(request, 'detalhe_lote.html', {'lote': lote})
+
+# --- AÇÕES DO SISTEMA ---
+
+def encerrar_sessao(request):
+    logout(request)
+    return redirect('login') # Manda de volta para a tela de login
 
 @login_required
 def vender_lote(request, lote_id):
@@ -64,7 +71,6 @@ def registrar_obito(request, gaveta_id):
 def limpar_gaveta(request, gaveta_id):
     gaveta = get_object_or_404(Gaveta, id=gaveta_id)
     
-    # --- PODER DO ADMIN ---
     # Se NÃO for admin, obedece a regra de data. Se for Admin, passa direto.
     if not request.user.is_superuser:
         pode, msg = gaveta.situacao_exumacao
@@ -77,6 +83,8 @@ def limpar_gaveta(request, gaveta_id):
     gaveta.save()
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
+# --- ESTRUTURA (QUADRAS E LOTES) ---
+
 @login_required
 def adicionar_quadra(request):
     max_num = Quadra.objects.aggregate(Max('numero'))['numero__max']
@@ -86,7 +94,7 @@ def adicionar_quadra(request):
 
 @login_required
 def excluir_quadra(request, quadra_id):
-    if request.user.is_superuser: # Só admin pode excluir quadra inteira
+    if request.user.is_superuser: 
         get_object_or_404(Quadra, id=quadra_id).delete()
     return redirect('index')
 
@@ -103,6 +111,8 @@ def adicionar_lote(request, quadra_id):
 def excluir_lote(request, lote_id):
     get_object_or_404(Lote, id=lote_id).delete()
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
+# --- PDF ---
 
 @login_required
 def gerar_relatorio(request):
