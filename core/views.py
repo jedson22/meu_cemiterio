@@ -1,31 +1,30 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Quadra, Lote
 
-# --- PÁGINA INICIAL (INDEX) ---
+# 1. PÁGINA INICIAL
 def index(request):
-    # Pega todas as quadras para mostrar na tela inicial
     quadras = Quadra.objects.all().order_by('numero')
-    
-    # Se você quiser mostrar os lotes direto na home, pode passar eles também
-    # Mas geralmente a home mostra as quadras
     return render(request, 'index.html', {'quadras': quadras})
 
-# --- PÁGINA DE DETALHES DA QUADRA (Se você tiver) ---
+# 2. DETALHES DA QUADRA (Lista os lotes)
 def detalhe_quadra(request, quadra_id):
     quadra = get_object_or_404(Quadra, id=quadra_id)
     lotes = quadra.lotes.all().order_by('numero')
     return render(request, 'quadra.html', {'quadra': quadra, 'lotes': lotes})
 
-# --- FUNÇÃO DE VENDER O LOTE ---
+# 3. DETALHES DO LOTE (A função que faltava!)
+def detalhe_lote(request, q_id, l_id):
+    # Pega o lote específico usando o ID da quadra e do lote
+    lote = get_object_or_404(Lote, quadra__numero=q_id, numero=l_id)
+    return render(request, 'detalhe_lote.html', {'lote': lote})
+
+# 4. FUNÇÃO DE VENDER
 def vender_lote(request, lote_id):
     if request.method == "POST":
         lote = get_object_or_404(Lote, id=lote_id)
-        nome_comprador = request.POST.get('nome_comprador')
-        
-        # Salva o nome no banco se foi digitado algo
-        if nome_comprador:
-            lote.proprietario = nome_comprador
+        nome = request.POST.get('nome_comprador')
+        if nome:
+            lote.proprietario = nome
             lote.save()
-            
-    # Redireciona de volta para a página de onde você veio
+    # Volta para a tela anterior
     return redirect(request.META.get('HTTP_REFERER', '/'))
