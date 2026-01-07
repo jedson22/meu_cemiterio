@@ -1,11 +1,7 @@
-import base64
-import io
-import matplotlib.pyplot as plt
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.db.models import Max
 from django.template.loader import get_template
-from xhtml2pdf import pisa
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from .models import Quadra, Lote, Gaveta, Produto
@@ -14,7 +10,7 @@ from .models import Quadra, Lote, Gaveta, Produto
 
 @login_required
 def index(request):
-    # Carrega o mapa otimizado
+    # Carrega o mapa de forma otimizada
     quadras = Quadra.objects.prefetch_related('lotes__gavetas').all().order_by('numero')
     
     # Verifica itens com estoque baixo para o alerta
@@ -152,10 +148,18 @@ def excluir_produto(request, produto_id):
         get_object_or_404(Produto, id=produto_id).delete()
     return redirect('lista_estoque')
 
-# --- RELATÓRIO PDF ---
+# --- RELATÓRIO PDF (IMPORTAÇÕES TARDIAS PARA ECONOMIZAR MEMÓRIA) ---
 
 @login_required
 def gerar_relatorio(request):
+    # IMPORTANTE: Importamos as bibliotecas pesadas APENAS AQUI dentro
+    import io
+    import base64
+    import matplotlib
+    matplotlib.use('Agg') # Otimização para servidor sem tela
+    import matplotlib.pyplot as plt
+    from xhtml2pdf import pisa
+
     # Dados do Cemitério
     total_lotes = Lote.objects.count()
     lotes_vendidos = Lote.objects.filter(proprietario__isnull=False).count()
@@ -174,6 +178,7 @@ def gerar_relatorio(request):
     
     buffer = io.BytesIO()
     plt.savefig(buffer, format='png')
+    plt.close() # Limpa a memória do gráfico
     buffer.seek(0)
     grafico_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
     buffer.close()
@@ -190,6 +195,7 @@ def gerar_relatorio(request):
     html = template.render(context)
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="relatorio_completo.pdf"'
+    
     pisa_status = pisa.CreatePDF(html, dest=response)
     if pisa_status.err: return HttpResponse('Erro ao gerar PDF')
     return response
