@@ -1,24 +1,31 @@
-import os
-from django.http import HttpResponse
-from django.conf import settings
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Quadra, Lote
 
+# 1. PÁGINA INICIAL (Mapa Geral)
 def index(request):
-    # Isso vai listar todos os arquivos do projeto na tela
-    output = []
-    output.append(f"PASTA BASE DO PROJETO: {settings.BASE_DIR}")
-    output.append("--- LISTA DE ARQUIVOS ENCONTRADOS ---")
-    
-    # Caminha por todas as pastas
-    for root, dirs, files in os.walk(settings.BASE_DIR):
-        for file in files:
-            caminho_completo = os.path.join(root, file)
-            # Mostra apenas arquivos html ou py para não poluir
-            if ".html" in file or ".py" in file:
-                output.append(caminho_completo)
-                
-    return HttpResponse("<br>".join(output))
+    quadras = Quadra.objects.all().order_by('numero')
+    return render(request, 'index.html', {'quadras': quadras})
 
-# Mantive as outras funções vazias só pro site não quebrar na inicialização
-def detalhe_quadra(request, quadra_id): return HttpResponse("Modo Diagnóstico")
-def detalhe_lote(request, q_id, l_id): return HttpResponse("Modo Diagnóstico")
-def vender_lote(request, lote_id): return HttpResponse("Modo Diagnóstico")
+# 2. DETALHES DA QUADRA (Caso você use links diretos pra quadra)
+def detalhe_quadra(request, quadra_id):
+    quadra = get_object_or_404(Quadra, id=quadra_id)
+    lotes = quadra.lotes.all().order_by('numero')
+    return render(request, 'quadra.html', {'quadra': quadra, 'lotes': lotes})
+
+# 3. DETALHES DO LOTE (Ver Gavetas)
+def detalhe_lote(request, q_id, l_id):
+    lote = get_object_or_404(Lote, quadra__numero=q_id, numero=l_id)
+    return render(request, 'detalhe_lote.html', {'lote': lote})
+
+# 4. FUNÇÃO DE VENDER
+def vender_lote(request, lote_id):
+    if request.method == "POST":
+        lote = get_object_or_404(Lote, id=lote_id)
+        nome = request.POST.get('nome_comprador')
+        
+        if nome:
+            lote.proprietario = nome
+            lote.save()
+            
+    # Retorna para a página anterior
+    return redirect(request.META.get('HTTP_REFERER', '/'))
