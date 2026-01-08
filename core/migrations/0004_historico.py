@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # 1. Cria a Tabela de Histórico
+        # Cria a tabela de Histórico
         migrations.CreateModel(
             name='Historico',
             fields=[
@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 'ordering': ['-data_exumacao'],
             },
         ),
-        # 2. Arruma a ordem dos Lotes (1, 2, 3...)
+        # Garante que os Lotes fiquem em ordem (1, 2, 3...)
         migrations.AlterModelOptions(
             name='lote',
             options={'ordering': ['numero']},
