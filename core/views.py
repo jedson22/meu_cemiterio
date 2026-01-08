@@ -4,22 +4,23 @@ from django.db.models import Max
 from django.template.loader import get_template
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
-from .models import Quadra, Lote, Gaveta, Produto
+from django.db import IntegrityError
+from .models import Quadra, Lote, Gaveta, Produto, Historico
 
-# --- SISTEMA PRINCIPAL ---
+# --- SISTEMA ---
 
 @login_required
 def index(request):
-    # Carrega o mapa de forma otimizada
+    # Carregamento otimizado (não trava o servidor)
     quadras = Quadra.objects.prefetch_related('lotes__gavetas').all().order_by('numero')
     
-    # Verifica itens com estoque baixo para o alerta
-    produtos_baixo = Produto.objects.filter(quantidade__lte=5).count()
-    
-    return render(request, 'index.html', {
-        'quadras': quadras,
-        'alerta_estoque': produtos_baixo
-    })
+    # Verifica tabela de produtos (se existir)
+    try:
+        produtos_baixo = Produto.objects.filter(quantidade__lte=5).count()
+    except:
+        produtos_baixo = 0
+        
+    return render(request, 'index.html', {'quadras': quadras, 'alerta_estoque': produtos_baixo})
 
 def encerrar_sessao(request):
     logout(request)
@@ -76,14 +77,42 @@ def registrar_obito(request, gaveta_id):
 @login_required
 def limpar_gaveta(request, gaveta_id):
     gaveta = get_object_or_404(Gaveta, id=gaveta_id)
+    
+    # Validação de Admin/Data
     if not request.user.is_superuser:
         pode, msg = gaveta.situacao_exumacao
         if not pode:
             return HttpResponse(f"ERRO: {msg}. Apenas Administradores.")
+    
+    # SALVA NO HISTÓRICO ANTES DE LIMPAR
+    if gaveta.nome:
+        Historico.objects.create(
+            gaveta=gaveta,
+            nome=gaveta.nome,
+            data_falecimento=gaveta.data,
+            observacao="Exumação realizada pelo sistema"
+        )
+
     gaveta.nome = None
     gaveta.data = None
     gaveta.status = 'Livre'
     gaveta.save()
+    return redirect(request.META.get('HTTP_REFERER', '/'))
+
+@login_required
+def adicionar_historico_manual(request, gaveta_id):
+    if request.method == "POST":
+        gaveta = get_object_or_404(Gaveta, id=gaveta_id)
+        nome = request.POST.get('nome_antigo')
+        data_f = request.POST.get('data_falecimento')
+        
+        if nome:
+            Historico.objects.create(
+                gaveta=gaveta,
+                nome=nome,
+                data_falecimento=data_f if data_f else None,
+                observacao="Registro adicionado manualmente"
+            )
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
 # --- ESTRUTURA ---
@@ -102,13 +131,23 @@ def excluir_quadra(request, quadra_id):
     return redirect('index')
 
 @login_required
-def adicionar_lote(request, quadra_id):
+def form_adicionar_lote(request, quadra_id):
     quadra = get_object_or_404(Quadra, id=quadra_id)
-    max_num = quadra.lotes.aggregate(Max('numero'))['numero__max']
-    novo = 1 if max_num is None else max_num + 1
-    lote = Lote.objects.create(quadra=quadra, numero=novo)
-    for i in range(1, 4): Gaveta.objects.create(lote=lote, numero=i)
-    return redirect(request.META.get('HTTP_REFERER', '/'))
+    return render(request, 'adicionar_lote.html', {'quadra': quadra})
+
+@login_required
+def salvar_lote(request, quadra_id):
+    if request.method == "POST":
+        quadra = get_object_or_404(Quadra, id=quadra_id)
+        numero_escolhido = request.POST.get('numero_lote')
+        
+        try:
+            lote = Lote.objects.create(quadra=quadra, numero=numero_escolhido)
+            for i in range(1, 4): Gaveta.objects.create(lote=lote, numero=i)
+        except IntegrityError:
+            return HttpResponse("Erro: Já existe um lote com esse número nesta quadra.")
+            
+    return redirect('index')
 
 @login_required
 def excluir_lote(request, lote_id):
@@ -125,21 +164,19 @@ def lista_estoque(request):
 @login_required
 def adicionar_produto(request):
     if request.method == "POST":
-        nome = request.POST.get('nome')
-        cat = request.POST.get('categoria')
-        qtd = request.POST.get('quantidade')
-        if nome:
-            Produto.objects.create(nome=nome, categoria=cat, quantidade=qtd)
+        Produto.objects.create(
+            nome=request.POST.get('nome'),
+            categoria=request.POST.get('categoria'),
+            quantidade=request.POST.get('quantidade')
+        )
     return redirect('lista_estoque')
 
 @login_required
 def atualizar_estoque(request, produto_id):
     if request.method == "POST":
         p = get_object_or_404(Produto, id=produto_id)
-        qtd = request.POST.get('nova_quantidade')
-        if qtd:
-            p.quantidade = qtd
-            p.save()
+        p.quantidade = request.POST.get('nova_quantidade')
+        p.save()
     return redirect('lista_estoque')
 
 @login_required
@@ -148,54 +185,47 @@ def excluir_produto(request, produto_id):
         get_object_or_404(Produto, id=produto_id).delete()
     return redirect('lista_estoque')
 
-# --- RELATÓRIO PDF (IMPORTAÇÕES TARDIAS PARA ECONOMIZAR MEMÓRIA) ---
+# --- PDF (IMPORTAÇÃO TARDIA PARA ECONOMIZAR MEMÓRIA) ---
 
 @login_required
 def gerar_relatorio(request):
-    # IMPORTANTE: Importamos as bibliotecas pesadas APENAS AQUI dentro
+    # IMPORTANTE: Só importa essas bibliotecas pesadas aqui dentro
     import io
     import base64
     import matplotlib
-    matplotlib.use('Agg') # Otimização para servidor sem tela
+    matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     from xhtml2pdf import pisa
 
-    # Dados do Cemitério
     total_lotes = Lote.objects.count()
     lotes_vendidos = Lote.objects.filter(proprietario__isnull=False).count()
     lotes_livres = total_lotes - lotes_vendidos
     total_gavetas = Gaveta.objects.count()
     gavetas_ocupadas = Gaveta.objects.filter(status='Ocupado').count()
     
-    # Dados do Estoque
-    estoque = Produto.objects.all().order_by('nome')
-
-    # Gráfico
     plt.figure(figsize=(4,3))
     if total_lotes > 0:
         plt.pie([lotes_vendidos, lotes_livres], labels=['Vendidos', 'Livres'], autopct='%1.1f%%', colors=['#3498db', '#2ecc71'])
-        plt.title('Ocupação de Lotes')
+        plt.title('Ocupação')
     
     buffer = io.BytesIO()
     plt.savefig(buffer, format='png')
-    plt.close() # Limpa a memória do gráfico
+    plt.close() # Limpa a memória
     buffer.seek(0)
-    grafico_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    grafico = base64.b64encode(buffer.getvalue()).decode('utf-8')
     buffer.close()
 
     context = {
         'total_lotes': total_lotes, 'lotes_vendidos': lotes_vendidos, 'lotes_livres': lotes_livres,
         'total_gavetas': total_gavetas, 'gavetas_ocupadas': gavetas_ocupadas,
-        'estoque': estoque,
-        'grafico': grafico_base64,
+        'estoque': Produto.objects.all(),
+        'grafico': grafico,
         'quadras': Quadra.objects.prefetch_related('lotes').all(),
     }
     
     template = get_template('relatorio.html')
     html = template.render(context)
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="relatorio_completo.pdf"'
-    
-    pisa_status = pisa.CreatePDF(html, dest=response)
-    if pisa_status.err: return HttpResponse('Erro ao gerar PDF')
+    response['Content-Disposition'] = 'attachment; filename="relatorio_cemiterio.pdf"'
+    pisa.CreatePDF(html, dest=response)
     return response
