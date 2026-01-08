@@ -18,8 +18,6 @@ class Migration(migrations.Migration):
                 ('observacao', models.TextField(blank=True, null=True)),
                 ('gaveta', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='historico', to='core.gaveta')),
             ],
-            options={
-                'ordering': ['-data_exumacao'],
-            },
+            options={'ordering': ['-data_exumacao']},
         ),
     ]
