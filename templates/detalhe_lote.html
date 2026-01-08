@@ -5,30 +5,31 @@
     <title>Gerenciar Lote</title>
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f4f4f9; text-align: center; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .btn-voltar { display: inline-block; margin-bottom: 20px; text-decoration: none; background: #333; color: white; padding: 10px; border-radius: 5px; }
         
-        .box-dono { background: #e7f1ff; border: 1px solid #b8daff; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .box-dono { background: #e7f1ff; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #b8daff; }
         .form-transfer { margin-top: 10px; display: flex; gap: 5px; justify-content: center; }
-        .form-transfer input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn-transfer { background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
-
-        .gaveta-card { border: 1px solid #ddd; margin: 15px 0; padding: 15px; border-radius: 8px; text-align: left; position: relative; }
-        .livre { border-left: 5px solid #28a745; background: #f9fff9; }
+        
+        .gaveta-card { border: 1px solid #ccc; margin: 20px 0; padding: 15px; border-radius: 8px; text-align: left; position: relative; background: #fff; }
+        .livre { border-left: 5px solid #28a745; }
         .ocupado { border-left: 5px solid #dc3545; background: #fff5f5; }
 
         input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn-salvar { background: #28a745; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 4px; }
+        .btn-salvar { background: #28a745; color: white; border: none; padding: 8px; cursor: pointer; }
         
-        .btn-exumar { position: absolute; top: 10px; right: 10px; background: #c0392b; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; }
-        .btn-admin-force { position: absolute; top: 10px; right: 10px; background: #8e44ad; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; font-weight: bold; border: 2px solid purple;}
-        .tag-bloqueado { position: absolute; top: 10px; right: 10px; background: #7f8c8d; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; cursor: not-allowed; }
+        .btn-exumar { float: right; background: #c0392b; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; }
+        .btn-admin-force { float: right; background: #8e44ad; color: white; text-decoration: none; padding: 5px; border-radius: 4px; font-size: 0.8em; border: 2px solid purple;}
+        
+        .historico-box { margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 0.9em; color: #555; }
+        .historico-item { background: #eee; padding: 5px; margin-bottom: 2px; border-radius: 3px; }
+        .form-manual { background: #f9f9f9; padding: 10px; margin-top: 10px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <a href="{% url 'index' %}" class="btn-voltar">⬅ Voltar ao Mapa</a>
+        <a href="{% url 'index' %}" class="btn-voltar">⬅ Voltar</a>
         <h1>Lote {{ lote.numero }} (Q. {{ lote.quadra.numero }})</h1>
         
         {% if lote.proprietario %}
@@ -38,34 +39,27 @@
                 <form action="{% url 'transferir_lote' lote.id %}" method="POST" class="form-transfer">
                     {% csrf_token %}
                     <input type="text" name="novo_titular" placeholder="Novo nome..." required>
-                    <button type="submit" class="btn-transfer">🔁 Transferir</button>
+                    <button type="submit" style="background:#007bff; color:white; border:none; padding:8px; cursor:pointer;">🔁 Transferir</button>
                 </form>
             </div>
         {% else %}
             <h3 style="color: green;">Lote Disponível</h3>
         {% endif %}
 
-        <h3>Gavetas</h3>
         {% for gaveta in lote.gavetas.all %}
             <div class="gaveta-card {% if gaveta.nome %}ocupado{% else %}livre{% endif %}">
                 <h3>⚰️ Gaveta {{ gaveta.numero }}</h3>
 
                 {% if gaveta.nome %}
-                    
                     {% if gaveta.situacao_exumacao.0 %}
-                        <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-exumar" onclick="return confirm('Exumar corpo?')">🗑 Exumar</a>
-                    
+                        <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-exumar" onclick="return confirm('Ao exumar, os dados irão para o histórico. Confirmar?')">🗑 Exumar</a>
                     {% elif user.is_superuser %}
-                        <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-admin-force" onclick="return confirm('⚠️ ATENÇÃO ADMIN: O prazo de 2 anos não acabou. Forçar exumação?')">⚡ Desbloquear Admin</a>
-                        <br><br><small style="color:red; float:right;">(Bloqueado para funcionários)</small>
-                    
+                        <a href="{% url 'limpar_gaveta' gaveta.id %}" class="btn-admin-force" onclick="return confirm('ADMIN: Forçar exumação?')">⚡ Forçar Exumação</a>
                     {% else %}
-                        <span class="tag-bloqueado">{{ gaveta.situacao_exumacao.1 }}</span>
+                        <span style="float:right; background:#999; color:white; padding:5px; font-size:0.8em; cursor:not-allowed;">{{ gaveta.situacao_exumacao.1 }}</span>
                     {% endif %}
-                    
                     <p><strong>Falecido:</strong> {{ gaveta.nome }}</p>
                     <p><strong>Sepultamento:</strong> {{ gaveta.data|date:"d/m/Y" }}</p>
-
                 {% else %}
                     <form action="{% url 'registrar_obito' gaveta.id %}" method="POST">
                         {% csrf_token %}
@@ -74,6 +68,26 @@
                         <button type="submit" class="btn-salvar">💾 Salvar</button>
                     </form>
                 {% endif %}
+
+                <div class="historico-box">
+                    <strong>📜 Histórico:</strong>
+                    {% for h in gaveta.historico.all %}
+                        <div class="historico-item">
+                            ✝ {{ h.nome }} ({{ h.data_falecimento|date:"d/m/Y"|default:"-" }}) - Exumado em: {{ h.data_exumacao|date:"d/m/Y" }}
+                        </div>
+                    {% empty %}
+                        <p style="font-size:0.8em; font-style:italic;">Vazio.</p>
+                    {% endfor %}
+                    <details>
+                        <summary style="cursor:pointer; color:#007bff; font-size:0.8em;">+ Adicionar Registro Antigo</summary>
+                        <form action="{% url 'adicionar_historico_manual' gaveta.id %}" method="POST" class="form-manual">
+                            {% csrf_token %}
+                            <input type="text" name="nome_antigo" placeholder="Nome antigo..." required style="width:40%;">
+                            <input type="date" name="data_falecimento" style="width:30%;">
+                            <button type="submit" style="font-size:0.8em;">Add</button>
+                        </form>
+                    </details>
+                </div>
             </div>
         {% endfor %}
     </div>
