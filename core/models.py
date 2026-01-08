@@ -16,7 +16,7 @@ class Lote(models.Model):
 
     class Meta: 
         unique_together = ('quadra', 'numero')
-        ordering = ['numero']
+        ordering = ['numero'] # Garante ordem 1, 2, 3...
     
     def __str__(self): return f"Q{self.quadra.numero}-L{self.numero}"
 
@@ -50,7 +50,16 @@ class Gaveta(models.Model):
         if hoje >= libera: return True, "✅ Exumação Autorizada"
         return False, f"⛔ Bloqueado até {libera.strftime('%d/%m/%Y')}"
 
-# --- NOVO MODELO: ESTOQUE ---
+class Historico(models.Model):
+    gaveta = models.ForeignKey(Gaveta, on_delete=models.CASCADE, related_name='historico')
+    nome = models.CharField(max_length=200)
+    data_falecimento = models.DateField(blank=True, null=True)
+    data_exumacao = models.DateField(auto_now_add=True)
+    observacao = models.TextField(blank=True, null=True)
+
+    class Meta: ordering = ['-data_exumacao']
+
+# --- ESTOQUE ---
 
 class Produto(models.Model):
     CATEGORIAS = [
