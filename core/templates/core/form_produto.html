@@ -1,0 +1,17 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="card col-md-6 mx-auto mt-5">
+    <div class="card-header bg-success text-white">
+        📦 Adicionar Novo Produto
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-success w-100">Salvar Produto</button>
+        </form>
+        <a href="{% url 'lista_estoque' %}" class="btn btn-secondary w-100 mt-2">Voltar</a>
+    </div>
+</div>
+{% endblock %}
