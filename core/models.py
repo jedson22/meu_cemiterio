@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 
+# --- PARTE DO CEMITÉRIO ---
 class Quadra(models.Model):
     numero = models.IntegerField()
     def __str__(self):
@@ -21,9 +22,8 @@ class Gaveta(models.Model):
 class Falecido(models.Model):
     SITUACAO_CHOICES = [
         ('sepultado', 'Sepultado'),
-        ('exumado', 'Exumado (Histórico)'),
+        ('exumado', 'Exumado (Ossário)'),
     ]
-
     nome = models.CharField(max_length=200)
     data_nascimento = models.DateField(null=True, blank=True)
     data_falecimento = models.DateField()
@@ -34,3 +34,28 @@ class Falecido(models.Model):
 
     def __str__(self):
         return self.nome
+
+# --- PARTE DO ESTOQUE (NOVO) ---
+class Produto(models.Model):
+    CATEGORIA_CHOICES = [
+        ('urna_bronze', 'Urna Bronze'),
+        ('urna_prata', 'Urna Prata'),
+        ('urna_ouro', 'Urna Ouro'),
+        ('quimico', 'Produto Químico (Formol/Outros)'),
+        ('diversos', 'Diversos'),
+    ]
+    nome = models.CharField(max_length=100)
+    categoria = models.CharField(max_length=50, choices=CATEGORIA_CHOICES)
+    quantidade = models.IntegerField(default=0)
+    preco = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    descricao = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.nome} ({self.quantidade})"
+
+class Historico(models.Model):
+    acao = models.CharField(max_length=255)
+    data = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.data} - {self.acao}"
