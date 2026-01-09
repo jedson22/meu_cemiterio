@@ -1,80 +1,147 @@
 from django.db import models
-from django.contrib.auth.models import User
-from datetime import date, timedelta
+from datetime import date
 
-# --- MODELOS DO CEMITÉRIO ---
 
 class Quadra(models.Model):
     numero = models.IntegerField(unique=True)
-    class Meta: ordering = ['numero']
-    def __str__(self): return f"Quadra {self.numero}"
+
+    class Meta:
+        ordering = ['numero']
+
+    def __str__(self):
+        return f"Quadra {self.numero}"
+
 
 class Lote(models.Model):
-    quadra = models.ForeignKey(Quadra, on_delete=models.CASCADE, related_name='lotes')
+    quadra = models.ForeignKey(
+        Quadra,
+        related_name='lotes',
+        on_delete=models.CASCADE
+    )
     numero = models.IntegerField()
-    proprietario = models.CharField(max_length=200, blank=True, null=True, verbose_name="Comprador")
+    proprietario = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name='Comprador'
+    )
 
-    class Meta: 
+    class Meta:
+        ordering = ['numero']
         unique_together = ('quadra', 'numero')
-        ordering = ['numero'] # Garante ordem 1, 2, 3...
-    
-    def __str__(self): return f"Q{self.quadra.numero}-L{self.numero}"
+
+    def __str__(self):
+        return f"Lote {self.numero} - Quadra {self.quadra.numero}"
 
     @property
     def esta_cheio(self):
-        # Otimização de memória
-        gavetas_lista = list(self.gavetas.all())
-        total = len(gavetas_lista)
-        if total == 0: return False
-        ocupadas = sum(1 for g in gavetas_lista if g.status == 'Ocupado')
-        return total == ocupadas
+        total = self.gavetas.count()
+        if total == 0:
+            return False
+        ocupadas = self.gavetas.filter(status='Ocupado').count()
+        return ocupadas == total
+
 
 class Gaveta(models.Model):
-    STATUS = [('Livre','Livre'), ('Ocupado','Ocupado')]
-    lote = models.ForeignKey(Lote, on_delete=models.CASCADE, related_name='gavetas')
+    STATUS_CHOICES = (
+        ('Livre', 'Livre'),
+        ('Ocupado', 'Ocupado'),
+    )
+
+    lote = models.ForeignKey(
+        Lote,
+        related_name='gavetas',
+        on_delete=models.CASCADE
+    )
     numero = models.IntegerField()
-    status = models.CharField(max_length=20, choices=STATUS, default='Livre')
-    nome = models.CharField(max_length=200, blank=True, null=True)
-    data = models.DateField(blank=True, null=True)
-    
-    class Meta: 
-        unique_together = ('lote', 'numero')
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='Livre'
+    )
+    nome = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True
+    )
+    data = models.DateField(
+        blank=True,
+        null=True
+    )
+
+    class Meta:
         ordering = ['numero']
+        unique_together = ('lote', 'numero')
+
+    def __str__(self):
+        return f"Gaveta {self.numero} - Lote {self.lote.numero}"
 
     @property
     def situacao_exumacao(self):
-        if not self.data: return True, "Vazio"
+        """
+        Regra:
+        - Admin sempre pode exumar
+        - Outros usuários só após 2 anos
+        """
+        if not self.data:
+            return False, "Gaveta vazia"
+
         hoje = date.today()
-        # Regra de 2 anos (730 dias)
-        libera = self.data + timedelta(days=730) 
-        if hoje >= libera: return True, "✅ Exumação Autorizada"
-        return False, f"⛔ Bloqueado até {libera.strftime('%d/%m/%Y')}"
+        anos = hoje.year - self.data.year - (
+            (hoje.month, hoje.day) < (self.data.month, self.data.day)
+        )
 
-class Historico(models.Model):
-    gaveta = models.ForeignKey(Gaveta, on_delete=models.CASCADE, related_name='historico')
-    nome = models.CharField(max_length=200)
-    data_falecimento = models.DateField(blank=True, null=True)
-    data_exumacao = models.DateField(auto_now_add=True)
-    observacao = models.TextField(blank=True, null=True)
+        if anos >= 2:
+            return True, "Exumação permitida"
 
-    class Meta: ordering = ['-data_exumacao']
+        return False, f"Exumação permitida apenas após 2 anos ({anos}/2)"
 
-# --- ESTOQUE ---
 
 class Produto(models.Model):
-    CATEGORIAS = [
+    CATEGORIA_CHOICES = (
         ('Urna', 'Urna Funerária'),
         ('Quimico', 'Produtos Químicos'),
         ('EPI', 'EPI / Proteção'),
         ('Outros', 'Outros'),
-    ]
-    nome = models.CharField(max_length=100)
-    categoria = models.CharField(max_length=20, choices=CATEGORIAS, default='Outros')
-    quantidade = models.IntegerField(default=0)
-    minimo = models.IntegerField(default=5, verbose_name="Estoque Mínimo")
+    )
 
-    def __str__(self): return self.nome
-    
-    @property
-    def alerta_baixo(self):
-        return self.quantidade <= self.minimo
+    nome = models.CharField(max_length=100)
+    categoria = models.CharField(
+        max_length=20,
+        choices=CATEGORIA_CHOICES,
+        default='Outros'
+    )
+    quantidade = models.IntegerField(default=0)
+    minimo = models.IntegerField(
+        default=5,
+        verbose_name='Estoque Mínimo'
+    )
+
+    def __str__(self):
+        return self.nome
+
+
+class Historico(models.Model):
+    gaveta = models.ForeignKey(
+        Gaveta,
+        related_name='historico',
+        on_delete=models.CASCADE
+    )
+    nome = models.CharField(max_length=200)
+    data_falecimento = models.DateField(
+        blank=True,
+        null=True
+    )
+    data_exumacao = models.DateField(
+        auto_now_add=True
+    )
+    observacao = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    class Meta:
+        ordering = ['-data_exumacao']
+
+    def __str__(self):
+        return f"{self.nome} ({self.data_exumacao})"
