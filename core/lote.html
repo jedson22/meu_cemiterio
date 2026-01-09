@@ -1,0 +1,16 @@
+<h3>Sepultados</h3>
+{% for f in sepultados %}
+    <div class="card">
+        {{ f.nome }}
+        <a href="{% url 'exumar_falecido' f.id %}" class="btn-exumar" onclick="return confirm('Tem certeza que deseja exumar?')">
+            ⚰️ Exumar
+        </a>
+    </div>
+{% endfor %}
+
+<h3>Histórico de Exumados</h3>
+{% for e in exumados %}
+    <div class="card historico">
+        {{ e.nome }} - Exumado em: {{ e.data_exumacao }}
+    </div>
+{% endfor %}
