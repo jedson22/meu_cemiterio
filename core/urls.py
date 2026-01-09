@@ -19,10 +19,11 @@ urlpatterns = [
     path('adicionar-quadra/', views.adicionar_quadra, name='adicionar_quadra'),
     path('excluir-quadra/<int:quadra_id>/', views.excluir_quadra, name='excluir_quadra'),
     
-    # ESTAS ROTAS SÃO ESSENCIAIS PARA O NOVO FUNCIONAMENTO
+    # --- ESTAS SÃO AS ROTAS QUE DEVEM ESTAR FALTANDO ---
     path('form-lote/<int:quadra_id>/', views.form_adicionar_lote, name='form_adicionar_lote'),
     path('salvar-lote/<int:quadra_id>/', views.salvar_lote, name='salvar_lote'),
     path('excluir-lote/<int:lote_id>/', views.excluir_lote, name='excluir_lote'),
+    # ---------------------------------------------------
 
     path('estoque/', views.lista_estoque, name='lista_estoque'),
     path('estoque/add/', views.adicionar_produto, name='adicionar_produto'),
