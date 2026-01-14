@@ -9,7 +9,10 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-chave-padrao-trocar-e
 DEBUG = os.environ.get('DEBUG', 'False') == 'True' # Em produção, deixe False
 
 # Permite qualquer host no Render (resolve o erro 500/400 de Host Disallowed)
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', '.railway.app']
+
+# Confiança para o CSRF (necessário para o admin funcionar no Railway)
+CSRF_TRUSTED_ORIGINS = ['https://*.railway.app']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
